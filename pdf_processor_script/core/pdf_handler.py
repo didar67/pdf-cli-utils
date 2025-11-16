@@ -1,8 +1,6 @@
 """
-PDFProcessor class
--------------------
-Handles all PDF operations (merge, split, rotate) in a clean,
-testable, and scalable architecture for future PDF features.
+Handles all PDF operations (merge, split, rotate) using a clean,
+testable, and modular architecture suitable for production use.
 """
 
 from pathlib import Path
@@ -16,30 +14,29 @@ logger = get_logger(__name__)
 class PDFProcessor:
     """Central processor for handling all PDF operations."""
 
-    def __init__(self, input_files=None):
+    def __init__(self, input_files: list[str] | None = None):
         """
         Initialize processor with optional input files list.
-        
-        Args:
-            input_files (list[Path] | None): List of PDF paths.
-        """
-        self.input_files = (
-            [Path(f) for f in input_files] if input_files else []
-        )
 
-    def merge_pdfs(self, output_path: str):
+        Args:
+            input_files (list[str] | None): List of PDF file paths.
+        """
+        # Normalize inputs to Path objects
+        self.input_files = [Path(f) for f in input_files] if input_files else []
+
+    def merge_pdfs(self, output_path: str) -> None:
         """
         Merge multiple PDFs into a single output file.
-        
+
         Args:
-            output_path (str): Path for merged PDF.
+            output_path (str): Destination path for merged PDF.
         """
         if not self.input_files:
             raise PDFProcessingError("No PDF files provided for merging.")
 
         writer = PdfWriter()
 
-        # Add pages from each file
+        # Add pages from each input PDF
         for pdf in self.input_files:
             try:
                 reader = PdfReader(pdf)
@@ -50,57 +47,59 @@ class PDFProcessor:
                 logger.error(f"Failed merging {pdf}: {e}")
                 raise PDFProcessingError(f"Error merging {pdf}") from e
 
-        # Save output file
+        # Save merged file
         try:
-            with open(output_path, "wb") as f:
-                writer.write(f)
+            with open(output_path, "wb") as file:
+                writer.write(file)
             logger.info(f"Merged PDF saved at: {output_path}")
         except Exception as e:
             raise PDFProcessingError("Error writing merged PDF.") from e
 
-    def split_pdf(self, input_pdf: str, output_dir: str):
+    def split_pdf(self, input_pdf: str, output_dir: str) -> None:
         """
-        Split a single PDF into multiple single-page PDFs.
-        
+        Split a PDF into multiple single-page PDF files.
+
         Args:
-            input_pdf (str): Path to PDF to split.
-            output_dir (str): Directory where split files will be stored.
+            input_pdf (str): Path to the PDF file to split.
+            output_dir (str): Output directory for generated page files.
         """
-        input_pdf = Path(input_pdf)
-        output_dir = Path(output_dir)
+        input_path = Path(input_pdf)
+        output_path = Path(output_dir)
 
         try:
-            reader = PdfReader(input_pdf)
+            reader = PdfReader(input_path)
         except Exception as e:
             raise PDFProcessingError("Cannot read input PDF.") from e
 
-        # Create output files page-by-page
-        for i, page in enumerate(reader.pages, start=1):
+        # Create each page as a separate PDF file
+        for index, page in enumerate(reader.pages, start=1):
             writer = PdfWriter()
             writer.add_page(page)
 
-            output_file = output_dir / f"{input_pdf.stem}_page_{i}.pdf"
+            page_file = output_path / f"{input_path.stem}_page_{index}.pdf"
 
             try:
-                with open(output_file, "wb") as f:
-                    writer.write(f)
-                logger.info(f"Created split page: {output_file}")
+                with open(page_file, "wb") as file:
+                    writer.write(file)
+                logger.info(f"Created split page: {page_file}")
             except Exception as e:
                 raise PDFProcessingError(
-                    f"Error writing page {i} during split."
+                    f"Error writing page {index} during split."
                 ) from e
 
-    def rotate_pdf(self, input_pdf: str, output_pdf: str, angle: int):
+    def rotate_pdf(self, input_pdf: str, output_pdf: str, angle: int) -> None:
         """
         Rotate all pages in a PDF by a given angle.
-        
+
         Args:
-            input_pdf (str): PDF to rotate.
-            output_pdf (str): Rotated PDF output path.
+            input_pdf (str): Input PDF path.
+            output_pdf (str): Output path for rotated PDF.
             angle (int): Rotation angle (90, 180, 270).
         """
+        input_path = Path(input_pdf)
+
         try:
-            reader = PdfReader(input_pdf)
+            reader = PdfReader(input_path)
         except Exception as e:
             raise PDFProcessingError("Cannot read input PDF.") from e
 
@@ -111,10 +110,10 @@ class PDFProcessor:
             page.rotate(angle)
             writer.add_page(page)
 
-        # Save output
+        # Save rotated file
         try:
-            with open(output_pdf, "wb") as f:
-                writer.write(f)
+            with open(output_pdf, "wb") as file:
+                writer.write(file)
             logger.info(f"Rotated PDF saved at: {output_pdf}")
         except Exception as e:
             raise PDFProcessingError("Error saving rotated PDF.") from e
