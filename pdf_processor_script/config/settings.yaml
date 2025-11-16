@@ -1,0 +1,13 @@
+app:
+  name: "PDF Processor"
+  environment: "production"
+  version: "1.0.0"
+
+paths:
+  output_dir: "outputs/"
+  log_dir: "logs/"
+
+logging:
+  level: "INFO"
+  rotation_size_mb: 5
+  backup_count: 5
